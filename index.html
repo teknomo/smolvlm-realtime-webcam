@@ -86,6 +86,66 @@
             <textarea id="instructionText" style="height: 2em; width: 40em" name="Instruction"></textarea>
         </div>
         <div>
+            <label for="systemText">System Instruction:</label><br>
+            <textarea id="systemText" style="height: 2em; width: 40em" name="SystemInstruction">
+You are a expert in video analysis. Answer the user's questions based on the video provided.
+If you cannot see anything in the image, say "I cannot see anything in the image."
+Analyze the live camera feed and describe the visual aspects, focusing on objects, activities, lighting, camera, color grading, mood, and aesthetic style.
+For example, you can tell the details about the scene like what the person is doing and other scene description such as:
+1. Person's action:
+- What is the person doing?
+- Any specific activity or task?
+- what is the mood of the person?
+- Any interaction with objects or environment?
+
+2. Objects:
+- What are the objects in the scene?
+- How are they positioned?
+- What is the purpose of the objects?
+- What is the relationship between the objects?
+
+3. Environment:
+- What is the environment?
+- How is the environment positioned?
+- What is the purpose of the environment?
+- What is the relationship between the environment and the objects?
+
+4. Lighting:
+- What is the lighting?
+- How is the lighting positioned?
+- Primary light source?
+- Natural or artificial?
+- Shadows and their effect?
+- Backlighting or fill light?
+- Light directionality?
+
+5. Camera:
+- Camera angle?
+- Camera movement?
+- Depth of field?
+- Composition?
+
+6. Color Grading:
+- Color temperature?
+- Color contrasts?
+- Saturation level?
+- Any specific grading style?
+
+7. Mood:
+- Emotional tone of the scene?
+- How lighting and color affect mood?
+- Any emotional cues?
+
+8. Aesthetic Style:
+- Overall aesthetic style?
+- Visual themes present?
+- Genre influence?
+- Noticeable visual effects or textures?
+
+user question:
+            </textarea>
+        </div>
+        <div>
             <label for="baseURL">Base API:</label><br>
             <input id="baseURL" name="Instruction" value="http://localhost:1234"></textarea>
         </div>
@@ -117,40 +177,7 @@
         const intervalSelect = document.getElementById('intervalSelect');
         const startButton = document.getElementById('startButton');
         const model = document.getElementById('model');
-        
-        // Define system prompt
-        const systemPrompt = `
-            Analyze the live camera feed and describe the visual aspects, focusing on lighting, camera, color grading, mood, and aesthetic style.
-            1. Lighting:
-            - Primary light source?
-            - Natural or artificial?
-            - Shadows and their effect?
-            - Backlighting or fill light?
-            - Light directionality?
-
-            2. Camera:
-            - Camera angle?
-            - Camera movement?
-            - Depth of field?
-            - Composition?
-
-            3. Color Grading:
-            - Color temperature?
-            - Color contrasts?
-            - Saturation level?
-            - Any specific grading style?
-
-            4. Mood:
-            - Emotional tone of the scene?
-            - How lighting and color affect mood?
-            - Any emotional cues?
-
-            5. Aesthetic Style:
-            - Overall aesthetic style?
-            - Visual themes present?
-            - Genre influence?
-            - Noticeable visual effects or textures?
-        `;
+        const systemText =document.getElementById('systemText');        
 
         instructionText.value = "What do you see? "; // default instruction
         let stream;
@@ -216,13 +243,13 @@
         async function sendData() {
             if (!isProcessing) return; // Ensure we don't have overlapping requests if processing takes longer than interval
 
-            const instruction = instructionText.value + systemPrompt;
+            const instruction = systemText.value + instructionText.value;
             const imageBase64URL = captureImage();
 
             if (!imageBase64URL) {
                 responseText.value = "Failed to capture image. Stream might not be active.";
                 // Optionally stop processing if image capture fails consistently
-                // handleStop();
+                handleStop();
                 return;
             }
 
@@ -251,7 +278,7 @@
             startButton.classList.remove('start');
             startButton.classList.add('stop');
 
-            instructionText.disabled = true;
+            systemText.disabled = true;
             intervalSelect.disabled = true;
 
             responseText.value = "Processing started...";
@@ -275,7 +302,7 @@
             startButton.classList.remove('stop');
             startButton.classList.add('start');
 
-            instructionText.disabled = false;
+            systemText.disabled = false;
             intervalSelect.disabled = false;
             if (responseText.value.startsWith("Processing started...")) {
                 responseText.value = "Processing stopped.";
