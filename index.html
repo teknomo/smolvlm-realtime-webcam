@@ -78,16 +78,20 @@
 
     <div class="io-areas">
         <div>
-            <label for="baseURL">Base API:</label><br>
-            <input id="baseURL" name="Instruction" value="http://localhost:8080"></textarea>
+            <label for="responseText">Response:</label><br>
+            <textarea id="responseText" style="height: 20em; width: 40em" name="Response" readonly placeholder="Server response will appear here..."></textarea>
         </div>
         <div>
             <label for="instructionText">Instruction:</label><br>
             <textarea id="instructionText" style="height: 2em; width: 40em" name="Instruction"></textarea>
         </div>
         <div>
-            <label for="responseText">Response:</label><br>
-            <textarea id="responseText" style="height: 2em; width: 40em" name="Response" readonly placeholder="Server response will appear here..."></textarea>
+            <label for="baseURL">Base API:</label><br>
+            <input id="baseURL" name="Instruction" value="http://localhost:1234"></textarea>
+        </div>
+        <div>
+            <label for="model">Model:</label><br>
+            <input id="model" name="VLM" value="smolvlm-500m-instruct"></textarea>
         </div>
     </div>
 
@@ -96,14 +100,15 @@
         <select id="intervalSelect" name="Interval between 2 requests">
             <option value="100">100ms</option>
             <option value="250">250ms</option>
-            <option value="500" selected>500ms</option>
+            <option value="500">500ms</option>
             <option value="1000">1s</option>
-            <option value="2000">2s</option>
+            <option value="2000" selected>2s</option>
         </select>
         <button id="startButton" class="start">Start</button>
     </div>
 
     <script>
+        
         const video = document.getElementById('videoFeed');
         const canvas = document.getElementById('canvas');
         const baseURL = document.getElementById('baseURL');
@@ -111,9 +116,43 @@
         const responseText = document.getElementById('responseText');
         const intervalSelect = document.getElementById('intervalSelect');
         const startButton = document.getElementById('startButton');
+        const model = document.getElementById('model');
+        
+        // Define system prompt
+        const systemPrompt = `
+            Analyze the live camera feed and describe the visual aspects, focusing on lighting, camera, color grading, mood, and aesthetic style.
+            1. Lighting:
+            - Primary light source?
+            - Natural or artificial?
+            - Shadows and their effect?
+            - Backlighting or fill light?
+            - Light directionality?
 
-        instructionText.value = "What do you see?"; // default instruction
+            2. Camera:
+            - Camera angle?
+            - Camera movement?
+            - Depth of field?
+            - Composition?
 
+            3. Color Grading:
+            - Color temperature?
+            - Color contrasts?
+            - Saturation level?
+            - Any specific grading style?
+
+            4. Mood:
+            - Emotional tone of the scene?
+            - How lighting and color affect mood?
+            - Any emotional cues?
+
+            5. Aesthetic Style:
+            - Overall aesthetic style?
+            - Visual themes present?
+            - Genre influence?
+            - Noticeable visual effects or textures?
+        `;
+
+        instructionText.value = "What do you see? "; // default instruction
         let stream;
         let intervalId;
         let isProcessing = false;
@@ -121,12 +160,16 @@
         // Returns response text (string)
         async function sendChatCompletionRequest(instruction, imageBase64URL) {
             const response = await fetch(`${baseURL.value}/v1/chat/completions`, {
-                method: 'POST',
+                method: 'POST',                
                 headers: {
-                    'Content-Type': 'application/json'
-                },
+                'Access-Control-Allow-Origin': '*', // Or specify allowed origins
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                'Content-Type': 'application/json'
+                },  
                 body: JSON.stringify({
-                    max_tokens: 100,
+                    model: model.value, //"smolvlm-500m-instruct",
+                    max_tokens: 250,
                     messages: [
                         { role: 'user', content: [
                             { type: 'text', text: instruction },
@@ -173,7 +216,7 @@
         async function sendData() {
             if (!isProcessing) return; // Ensure we don't have overlapping requests if processing takes longer than interval
 
-            const instruction = instructionText.value;
+            const instruction = instructionText.value + systemPrompt;
             const imageBase64URL = captureImage();
 
             if (!imageBase64URL) {
